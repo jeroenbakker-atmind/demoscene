@@ -1,5 +1,11 @@
 .MODEL TINY
 
+PALETTE_LEN = 24
+PALETTE_OFFSET = 80
+SCREEN_WIDTH = 320
+SCREEN_HEIGHT = 200
+BAR_HEIGHT = 10
+
 .DATA
 
 .CODE
@@ -11,27 +17,29 @@ enter_vga:
     mov ax, 0a000h
     mov es, ax
 
+frame_init:
     xor bl, bl
+    
 frame_loop:
-    mov dl, 200/10
+    mov dl, SCREEN_HEIGHT/BAR_HEIGHT
     mov bh, bl
-    mov di, 0h
+    xor di, di
 
 frame_row_group:
     mov al, bh
-    add al, 80
-    mov cx, 320*10
+    add al, PALETTE_OFFSET
+    mov cx, SCREEN_WIDTH*BAR_HEIGHT
     rep stosb
     dec bh
     jnc no_reset_al
-    mov bh, 23
+    mov bh, PALETTE_LEN - 1
 
 no_reset_al:
     dec dl
     jnz frame_row_group
 
     inc bl
-    cmp bl, 24
+    cmp bl, PALETTE_LEN - 1
     jne no_reset
     xor bl, bl
 no_reset:
@@ -58,9 +66,7 @@ exit_to_txt:
     int 10h
 
 exit:
-
-    mov ax, 4C00h
-    int 21h
+    ret
 ENDIF
 
 END entry_point
