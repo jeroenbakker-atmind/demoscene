@@ -11,21 +11,21 @@ enter_vga:
     mov ax, 0a000h
     mov es, ax
 
-
     xor bl, bl
 frame_loop:
     mov dl, 200/10
-    mov al, bl
-    add al, 80
+    mov bh, bl
     mov di, 0h
 
 frame_row_group:
+    mov al, bh
+    add al, 80
     mov cx, 320*10
     rep stosb
-    inc al
-    cmp al, 80+24
-    jne no_reset_al
-    mov al, 80
+    dec bh
+    jnc no_reset_al
+    mov bh, 23
+
 no_reset_al:
     dec dl
     jnz frame_row_group
@@ -45,6 +45,9 @@ wait_vertical_sync_start:
     jz wait_vertical_sync_start
 
 
+IFDEF RELEASE
+    jmp frame_loop
+ELSE
 wait_for_key:
     mov ah, 1
     int 16h
@@ -58,5 +61,6 @@ exit:
 
     mov ax, 4C00h
     int 21h
+ENDIF
 
 END entry_point
