@@ -12,4 +12,15 @@ del 001-rel.com
 ..\masm\exe2bin 001.exe 001-rel.com
 del 001.exe
 
+del 002.com
+..\masm\masm 002.asm;
+..\masm\link 002.obj;
+..\masm\exe2bin 002.exe 002.com
+del 002.exe
+del 002-rel.com
+..\masm\masm /DRELEASE 002.asm;
+..\masm\link 002.obj;
+..\masm\exe2bin 002.exe 002-rel.com
+del 002.exe
+
 dir *.com
