@@ -6,6 +6,8 @@ COLOR_WHITE = 15
 COLOR_RED = 4
 COLOR_LIGHT_RED = 12
 
+DO_DRY_BLOOD = 0
+
 .DATA
 .CODE
 entry_point:
@@ -29,26 +31,30 @@ frame_init:
     rep stosb
 
 frame_loop:
-    xor dl, dl
+    xor dx, dx
 frame_update:
 
-    call pseudo_random
+    call xorshift16
 
     mov di, ax
     mov al, es:[di]
-    cmp al, COLOR_RED
-    jne dry_up_blood
+if 0
+    ;cmp al, COLOR_RED
+    ;jne dry_up_blood
 
-    call pseudo_random
+drop_start:
+    call xorshift16
     mov cl, al
-    and cl, 15
+    and cx, 7
+    mov al, COLOR_LIGHT_RED
 drip:
     stosb
-    add di, SCREEN_WIDTH-1
     jc drip_exit
+    add di, SCREEN_WIDTH
     loop drip
 drip_exit:
     jmp drip_done
+ENDIF
 
 dry_up_blood:
     mov al, COLOR_WHITE
@@ -86,23 +92,6 @@ exit:
     ret
 ENDIF
 
-pseudo_random:
-    mov ax, cs:[seed]
-    mov bx, ax
-    mov cl, 7
-    shl bx, cl
-    xor ax, bx
-    mov bx, ax
-    mov cl, 9
-    shr bx, cl
-    xor ax, bx
-    mov bx, ax
-    mov cl, 8
-    shl bx, cl
-    xor ax, bx
-    mov cs:[seed], ax
-    ret
-
-seed dw 1h
+include util\xorsh16.asm
 
 END entry_point
