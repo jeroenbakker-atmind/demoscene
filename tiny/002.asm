@@ -9,6 +9,8 @@ COLOR_LIGHT_RED = 12
 DO_DRY_BLOOD = 0
 
 .DATA
+seed dw 1h
+
 .CODE
 entry_point:
 
@@ -35,29 +37,29 @@ frame_loop:
 frame_update:
 
     call xorshift16
-
     mov di, ax
+
+    xor ax, ax
     mov al, es:[di]
-if 0
-    ;cmp al, COLOR_RED
-    ;jne dry_up_blood
+
+    cmp al, COLOR_RED
+    jne dry_up_blood
 
 drop_start:
     call xorshift16
-    mov cl, al
-    and cx, 7
-    mov al, COLOR_LIGHT_RED
+    mov cx, ax
+    and cx, 15
+    inc cx
+    mov al, COLOR_RED
 drip:
-    stosb
-    jc drip_exit
+    mov es:[di], al
     add di, SCREEN_WIDTH
+    jc drip_done
     loop drip
-drip_exit:
-    jmp drip_done
-ENDIF
 
 dry_up_blood:
     mov al, COLOR_WHITE
+    mov es:[di], al
     mov es:[di-320], al
     mov es:[di-1], al
     mov es:[di+1], al

@@ -1,5 +1,5 @@
 xorshift16:
-    mov ax, cs:[seed]
+    mov ax, ds:[seed]
     mov bx, ax
     mov cl, 7
     shl bx, cl
@@ -12,7 +12,5 @@ xorshift16:
     mov cl, 8
     shl bx, cl
     xor ax, bx
-    mov cs:[seed], ax
+    mov ds:[seed], ax
     ret
-
-seed dw 1h
