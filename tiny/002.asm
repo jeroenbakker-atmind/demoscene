@@ -4,12 +4,11 @@ SCREEN_WIDTH = 320
 SCREEN_HEIGHT = 200
 COLOR_WHITE = 15
 COLOR_RED = 4
-COLOR_LIGHT_RED = 12
-
-DO_DRY_BLOOD = 0
+CLEAR_DATA_LEN = 5
 
 .DATA
-seed dw 1h
+seed dw 4321h
+clear_area dw -320, 319, 1, 1, 319
 
 .CODE
 entry_point:
@@ -30,15 +29,14 @@ frame_init:
     mov di, SCREEN_WIDTH * 25
     mov cx, SCREEN_WIDTH * 12
     mov al, COLOR_RED
-    rep stosb
+    rep stosb   
 
 frame_loop:
     xor dx, dx
-frame_update:
 
+frame_update:
     call xorshift16
     mov di, ax
-
     xor ax, ax
     mov al, es:[di]
 
@@ -58,12 +56,14 @@ drip:
     loop drip
 
 dry_up_blood:
-    mov al, COLOR_WHITE
-    mov es:[di], al
-    mov es:[di-320], al
-    mov es:[di-1], al
-    mov es:[di+1], al
-    mov es:[di+320], al
+    mov si, clear_area 
+    mov cx, CLEAR_DATA_LEN
+    mov bl, COLOR_WHITE
+dry_up_blood_loop:
+    LODSW
+    add di, ax
+    mov es:[di], bl
+    loop dry_up_blood_loop
 
 drip_done:
 
@@ -72,10 +72,10 @@ drip_done:
 
 
 wait_vertical_sync:
-    mov dx,03DAh
+    mov dx, 03DAh
 wait_vertical_sync_start:
-    in al,dx
-    test al,8
+    in al, dx
+    test al, 8
     jz wait_vertical_sync_start
 
 IFDEF RELEASE
