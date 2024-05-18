@@ -31,4 +31,8 @@ del 004.exe
 ..\masm\masm 004.asm;
 ..\masm\link 004.obj;
 
+del 005.exe
+..\masm\masm 005.asm;
+..\masm\link 005.obj;
+
 dir *.com;*.exe
