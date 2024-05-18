@@ -23,4 +23,12 @@ del 002-rel.com
 ..\masm\exe2bin 002.exe 002-rel.com
 del 002.exe
 
-dir *.com
+del 003.exe
+..\masm\masm 003.asm;
+..\masm\link 003.obj;
+
+del 004.exe
+..\masm\masm 004.asm;
+..\masm\link 004.obj;
+
+dir *.com;*.exe
