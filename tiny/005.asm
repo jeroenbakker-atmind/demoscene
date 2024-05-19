@@ -42,7 +42,7 @@ plasma_inner_loop:
     DEC CX               ; Decrement inner loop counter
     JNZ plasma_inner_loop
 
-    ADD DI, 120          ; Move to the next line (320 - 200)
+    ;ADD DI, 120          ; Move to the next line (320 - 200)
 
     ; Delay for animation
     CALL delay
@@ -71,7 +71,8 @@ plasma_function PROC
     MOV CX, 32           ; Plasma frequency
     DIV CX               ; Divide by plasma frequency
     ADD AL, DL           ; Phase shift with frame count
-    MOV DL, frameCount
+    XOR DX, DX
+    MOV DX, frameCount
     ADD AL, DL
     XOR BL, AL           ; Use AL as phase for Y
     MOV CX, 16           ; Plasma amplitude
@@ -85,7 +86,7 @@ plasma_function ENDP
 
 delay PROC
     ; Insert a delay for animation
-    MOV CX, 10000h
+    MOV CX, 0h
 delay_loop:
     DEC CX
     JNZ delay_loop

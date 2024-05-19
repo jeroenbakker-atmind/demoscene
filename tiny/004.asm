@@ -103,7 +103,7 @@ draw_horizontal_line PROC
 draw_pixel_loop:
     CMP CX, DI
     JG end_line
-    MOV [ES:CX], AL
+    MOV ES:[CX], AL
     INC CX
     JMP draw_pixel_loop
 
