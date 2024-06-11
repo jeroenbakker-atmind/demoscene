@@ -1,138 +1,110 @@
-.MODEL small
+.MODEL SMALL
 .STACK 100h
-
 .DATA
-maxColor  DB 63         ; Max color intensity (using VGA palette range)
-centerX   DW 160        ; Center X coordinate of the cube
-centerY   DW 100        ; Center Y coordinate of the cube
-halfSize  DW 50         ; Half of the cube side length (halfSize)
-lightX    DW 577        ; Light direction X component (1/sqrt(3) * 1024)
-lightY    DW -577       ; Light direction Y component (-1/sqrt(3) * 1024)
-lightZ    DW -577       ; Light direction Z component (-1/sqrt(3) * 1024)
+    screen_width EQU 80
+    screen_height EQU 25
+    shading_chars DB ' .:-=+*%@#'
+    sphere_center_x DW 40
+    sphere_center_y DW 12
+    sphere_center_z DW 0
+    sphere_radius DW 10
+    light_x DW 20
+    light_y DW 20
+    light_z DW 0
 
 .CODE
-main PROC
-    ; Initialize DS
-    MOV AX, @data
+main:
+    ; Initialize data segment
+    MOV AX, @DATA
     MOV DS, AX
 
-    ; Set video mode to 13h (320x200, 256 colors)
-    MOV AX, 0013h
+    ; Set video mode to 80x25 text mode
+    MOV AX, 03h
     INT 10h
 
-    ; Set ES to 0A000h for VGA video memory
-    MOV AX, 0A000h
+    ; Set video memory segment
+    MOV AX, 0B800h
     MOV ES, AX
 
-    ; Draw the cube using SDF with lighting
-    MOV CX, 320         ; Screen width
-    MOV DX, 200         ; Screen height
-    XOR BX, BX          ; Reset BX (y coordinate)
+    ; Render sphere
+    MOV CX, screen_height
+    XOR DI, DI
 
-draw_loop_y:
-    XOR SI, SI          ; Reset SI (x coordinate)
-draw_loop_x:
-    ; Calculate distance from the point (SI, BX) to the cube surface
-    ; d = max(abs(x - centerX) - halfSize, abs(y - centerY) - halfSize)
-    MOV AX, SI          ; AX = x
-    SUB AX, centerX     ; AX = x - centerX
-    CALL abs_val_bitwise
-    SUB AX, halfSize    ; AX = abs(x - centerX) - halfSize
-    MOV DI, AX          ; DI = abs(x - centerX) - halfSize
+render_rows:
+    PUSH CX
+    MOV CX, screen_width
 
-    MOV AX, BX          ; AX = y
-    SUB AX, centerY     ; AX = y - centerY
-    CALL abs_val_bitwise
-    SUB AX, halfSize    ; AX = abs(y - centerY) - halfSize
+render_columns:
+    PUSH CX
+    MOV AX, screen_height
+    SUB AX, screen_height
+    MOV BX, screen_width
+    SUB BX, screen_width
+    MOV DX, BX
 
-    ; DI = max(DI, AX)
-    CMP DI, AX
-    JGE skip_max
-    MOV DI, AX
-skip_max:
+    ; Convert screen coordinates to world coordinates
+    ; Simplify to linear transformation for demonstration
+    MOV AX, screen_height
+    SUB AX, CX
+    MOV BX, 2
+    MUL BX
+    MOV SI, AX
 
-    ; If DI <= 0, the point is inside or on the cube
-    CMP DI, 0
-    JG skip_pixel
+    MOV AX, screen_width
+    SUB AX, screen_width
+    MOV BX, 2
+    MUL BX
+    MOV BX, AX
 
-    ; Determine the normal direction based on which face is closest
-    MOV AX, SI          ; AX = x
-    SUB AX, centerX     ; AX = x - centerX
-    CALL abs_val_bitwise
-    CMP AX, halfSize
-    JG face_y
-    MOV AX, BX          ; AX = y
-    SUB AX, centerY     ; AX = y - centerY
-    CALL abs_val_bitwise
-    CMP AX, halfSize
-    JG face_x
+    ; Calculate SDF to the sphere
+    MOV AX, SI
+    SUB AX, sphere_center_x
+    IMUL AX
+    MOV SI, AX
 
-    ; Face normal is along Z-axis
-    MOV AX, lightZ
-    JMP calc_intensity
+    MOV AX, BX
+    SUB AX, sphere_center_y
+    IMUL AX
+    ADD SI, AX
 
-face_x:
-    ; Face normal is along X-axis
-    MOV AX, lightX
-    JMP calc_intensity
+    MOV AX, sphere_center_z
+    IMUL AX
+    ADD SI, AX
 
-face_y:
-    ; Face normal is along Y-axis
-    MOV AX, lightY
+    ; Here SI contains the distance squared
 
-calc_intensity:
-    ; Calculate intensity based on dot product L . N
-    ; Normalize intensity to range [0, 63]
-    IMUL AX, 1024       ; AX = Lx * Nx * 1024
-    MOV CX, 10
-    SAR AX, CL          ; Divide by 1024 (right shift by 10 bits)
-    CMP AX, 0
-    JG intensity_positive
-    XOR AX, AX          ; AX = 0
-intensity_positive:
-    CMP AX, maxColor
-    JLE skip_max_color
-    MOV AX, maxColor    ; Cap the intensity at maxColor
-skip_max_color:
+    ; Compare distance to sphere radius
+    MOV AX, sphere_radius
+    IMUL AX
+    CMP SI, AX
+    JL inside_sphere
 
-    ; Plot the pixel (SI, BX) with calculated intensity
-    MOV DI, AX          ; DI = intensity
-    MOV AX, 320         ; 320 bytes per scanline
-    MUL BX              ; AX = 320 * y
-    ADD AX, SI          ; AX = 320 * y + x
-    MOV DI, AX          ; DI = offset
-    MOV AL, BL
-    MOV ES:[DI], AL     ; Write intensity to video memory
+    ; Outside the sphere
+    MOV AL, ' '
+    JMP render_char
 
-skip_pixel:
-    INC SI              ; Increment x coordinate
-    CMP SI, CX
-    JL draw_loop_x
+inside_sphere:
+    ; Calculate lighting
+    ; Simplified to a constant value for demonstration
+    MOV AL, '#'
 
-    INC BX              ; Increment y coordinate
-    CMP BX, DX
-    JL draw_loop_y
+render_char:
+    ; Write character to video memory
+    MOV ES:[DI], AL
+    INC DI
+    INC DI
+    POP CX
+    LOOP render_columns
 
-    ; Wait for a key press
+    POP CX
+    LOOP render_rows
+
+    ; Wait for key press
     MOV AH, 00h
     INT 16h
 
-    ; Set video mode to 03h (text mode 80x25, 16 colors)
-    MOV AX, 0003h
-    INT 10h
-
-    ; Terminate the program
+    ; Return to DOS
     MOV AX, 4C00h
     INT 21h
-main ENDP
-
-; Function to calculate absolute value using bitwise operations
-abs_val_bitwise PROC
-    MOV DX, AX
-    SAR DX, 15          ; Get the sign bit (0 for positive, -1 for negative)
-    XOR AX, DX
-    SUB AX, DX          ; Perform XOR and subtraction to get the absolute value
-    RET
-abs_val_bitwise ENDP
 
 END main

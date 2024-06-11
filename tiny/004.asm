@@ -1,114 +1,86 @@
-.MODEL small
+.MODEL SMALL
 .STACK 100h
-
 .DATA
-x1 DW 50
-y1 DW 50
-x2 DW 100
-y2 DW 150
-x3 DW 150
-y3 DW 80
+    screen_width EQU 80
+    screen_height EQU 25
+    palette DB ' .:-=+*%@#'
 
 .CODE
-main PROC
-    MOV AX, @data
+main:
+    ; Initialize data segment
+    MOV AX, @DATA
     MOV DS, AX
 
-    MOV AX, 0013h
+    ; Set video mode to 80x25 text mode
+    MOV AX, 03h
     INT 10h
 
-    MOV AX, 0A000h
+    ; Set video memory segment
+    MOV AX, 0B800h
     MOV ES, AX
 
-    CALL sort_vertices
+    ; Render plasma effect
+    MOV CX, screen_height
+    XOR DI, DI
 
-    MOV AX, y2
-    SUB AX, y1
-    MOV DX, AX         ; dy1 = y2 - y1
-    MOV AX, y3
-    SUB AX, y1
-    MOV BX, AX         ; dy2 = y3 - y1
+render_rows:
+    PUSH CX
+    MOV CX, screen_width
+    MOV DX, screen_height
+    SUB DX, CX  ; Store current row
 
-    MOV AX, x2
-    SUB AX, x1
-    IMUL AX, DX
-    IDIV BX
-    ADD AX, x1
-    MOV CX, AX         ; xLeft
+render_columns:
+    PUSH CX
+    MOV BX, screen_width
+    SUB BX, CX  ; Store current column
 
-    MOV AX, x3
-    SUB AX, x1
-    IDIV BX
-    MOV DI, AX         ; dxRight = (x3 - x1) / (y3 - y1)
+    ; Plasma calculation
+    ; Use combination of sine and cosine functions for effect
+    MOV AX, DX
+    MOV SI, AX
+    ; Multiply SI by 10
+    MOV AX, SI
+    SHL AX, 1
+    ADD SI, AX  ; SI = SI * 3
+    MOV AX, SI
+    SHL AX, 1
+    ADD SI, AX  ; SI = SI * 5
+    MOV AX, SI
+    SHL AX, 1
+    ADD SI, AX  ; SI = SI * 10
 
-    MOV AX, y1
-    MOV BX, y2
+    ADD SI, BX
+    MOV BX, SI
+    MOV AX, BX
+    ADD AX, SI
+    MOV BX, 16 ; divide by 16 instead of SHR AX, 4
+    DIV BX
 
-fill_bottom_part:
-    CMP AX, BX
-    JGE fill_top_part
-    CALL draw_horizontal_line
-    INC AX
-    ADD CX, SI
-    JMP fill_bottom_part
+    ; Cycle through palette based on intensity
+    XOR BX, BX
+    MOV BL, AL
+    AND BX, 7  ; Mask to ensure the value is within the palette range
 
-fill_top_part:
-    MOV BX, y3
+    ; Get the character from the palette
+    MOV AL, palette[BX]
 
-fill_top_loop:
-    CMP AX, BX
-    JG end_fill
-    CALL draw_horizontal_line
-    INC AX
-    ADD CX, SI
-    JMP fill_top_loop
+    ; Write character to video memory
+    MOV ES:[DI], AL
+    INC DI
+    INC DI
+    POP CX
+    LOOP render_columns
 
-end_fill:
-    MOV AX, 0003h
-    INT 10h
+    POP CX
+    ADD DI, 160 - (2 * screen_width) ; Move to the next line in video memory
+    LOOP render_rows
 
+    ; Wait for key press
+    MOV AH, 00h
+    INT 16h
+
+    ; Return to DOS
     MOV AX, 4C00h
     INT 21h
-main ENDP
-
-sort_vertices PROC
-    MOV AX, y1
-    CMP AX, y2
-    JLE no_swap_12
-    XCHG y1, y2
-    XCHG x1, x2
-no_swap_12:
-    MOV AX, y1
-    CMP AX, y3
-    JLE no_swap_13
-    XCHG y1, y3
-    XCHG x1, x3
-no_swap_13:
-    MOV AX, y2
-    CMP AX, y3
-    JLE no_swap_23
-    XCHG y2, y3
-    XCHG x2, x3
-no_swap_23:
-    RET
-sort_vertices ENDP
-
-draw_horizontal_line PROC
-    MOV DI, 320
-    MUL AX
-    ADD AX, CX
-    MOV DI, AX
-    MOV AL, 15
-
-draw_pixel_loop:
-    CMP CX, DI
-    JG end_line
-    MOV ES:[CX], AL
-    INC CX
-    JMP draw_pixel_loop
-
-end_line:
-    RET
-draw_horizontal_line ENDP
 
 END main

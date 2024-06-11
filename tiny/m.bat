@@ -28,10 +28,10 @@ del 003.exe
 ..\masm\link 003.obj;
 
 del 004.exe
-rem ..\masm\masm 004.asm;
-rem ..\masm\link 004.obj;
+..\masm\masm 004.asm;
+..\masm\link 004.obj;
 
-del 005.exe
+rem del 005.exe
 rem ..\masm\masm 005.asm;
 rem ..\masm\link 005.obj;
 
